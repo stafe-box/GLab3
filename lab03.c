@@ -25,9 +25,6 @@ struct MainWindowObjects
     GtkWindow           *main_window;
     GtkTreeView         *treeview;
     GtkListStore        *liststore;
-    /*GtkAdjustment       *lectures_adjustment;
-    GtkAdjustment       *practices_adjustment;
-    GtkAdjustment       *laboratory_adjustment;*/
     GtkTreeViewColumn   *cln_lecturer_id;
     GtkTreeViewColumn   *cln_lecturer_name;
     GtkTreeViewColumn   *cln_discipline_id;
@@ -44,7 +41,8 @@ struct MainWindowObjects
     GtkSpinButton       *lectures_spin;
     GtkSpinButton       *practices_spin;
     GtkSpinButton       *laboratory_spin;
-    GtkEntry            *control_entry; 
+    GtkEntry            *control_entry;
+    GtkDialog           *delDialog;
 } mainWindowObjects;
 
 
@@ -233,7 +231,9 @@ G_MODULE_EXPORT void on_btnexit_clicked(GtkWidget *window, gpointer data)
     gtk_main_quit();
 }
 
-void remove_row (GtkTreeRowReference *ref, GtkTreeModel *model)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void remove_row_ld (GtkTreeRowReference *ref, GtkTreeModel *model)
 {
     GtkTreeIter iter;
     GtkTreePath *path;
@@ -241,17 +241,15 @@ void remove_row (GtkTreeRowReference *ref, GtkTreeModel *model)
     gtk_tree_model_get_iter (model, &iter, path);
     gint lecid;
     gint disid;
-    gint conid;
-    printf("*\n");
     gtk_tree_model_get(GTK_TREE_MODEL(mainWindowObjects.liststore), &iter, LECTURERID, &lecid,
-                           DISCIPLINEID, &disid, CONTROLID, &conid, -1);
-    printf("*\n");
-    sqlite_delete(lecid, disid, conid);
-    gtk_list_store_remove (GTK_LIST_STORE (model), &iter);
-
+                           DISCIPLINEID, &disid, -1);
+    sqlite_delete_ld(lecid, disid);
+    gtk_widget_destroy(mainWindowObjects.delDialog);
+    gtk_list_store_clear(mainWindowObjects.liststore);
+    sqlite_get_data();
 }
 
-G_MODULE_EXPORT void delbtn_cliked (GtkButton *delbtn, gpointer data)
+G_MODULE_EXPORT void on_lec_to_dis_btn_clicked(GtkButton *lec_to_dis_btn, gpointer data)
 {
     GtkTreeSelection *selection;
     GtkTreeRowReference *ref;
@@ -270,13 +268,87 @@ G_MODULE_EXPORT void delbtn_cliked (GtkButton *delbtn, gpointer data)
         ptr = ptr->next;
     }
     
-    g_list_foreach ( references, (GFunc) remove_row, model );
+    g_list_foreach ( references, (GFunc) remove_row_ld, model );
     g_list_foreach ( references, (GFunc) gtk_tree_row_reference_free, NULL );
     g_list_foreach ( rows, (GFunc) gtk_tree_path_free, NULL );
     g_list_free ( references );
     g_list_free ( rows ); 
 }
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void remove_row_cd (GtkTreeRowReference *ref, GtkTreeModel *model)
+{
+    GtkTreeIter iter;
+    GtkTreePath *path;
+    path = gtk_tree_row_reference_get_path (ref);
+    gtk_tree_model_get_iter (model, &iter, path);
+    gint disid;
+    gint conid;
+    gtk_tree_model_get(GTK_TREE_MODEL(mainWindowObjects.liststore), &iter,
+                           DISCIPLINEID, &disid, CONTROLID, &conid, -1);
+    sqlite_delete_cd(disid, conid);
+    gtk_widget_destroy(mainWindowObjects.delDialog);
+    gtk_list_store_clear(mainWindowObjects.liststore);
+    sqlite_get_data();
+
+}
+
+G_MODULE_EXPORT void on_con_to_dis_btn_clicked(GtkButton *lec_to_dis_btn, gpointer data)
+{
+    GtkTreeSelection *selection;
+    GtkTreeRowReference *ref;
+    GtkTreeModel *model;
+    GList *rows, *ptr, *references = NULL;
+    selection = gtk_tree_view_get_selection ( mainWindowObjects.treeview );
+    model = gtk_tree_view_get_model ( mainWindowObjects.treeview );
+    rows = gtk_tree_selection_get_selected_rows (selection, &model);
+
+    ptr = rows;
+    while (ptr != NULL)
+    {
+        ref = gtk_tree_row_reference_new (model, (GtkTreePath*) ptr->data);
+        references = g_list_prepend (references, gtk_tree_row_reference_copy (ref));
+        gtk_tree_row_reference_free (ref);
+        ptr = ptr->next;
+    }
+    
+    g_list_foreach ( references, (GFunc) remove_row_cd, model );
+    g_list_foreach ( references, (GFunc) gtk_tree_row_reference_free, NULL );
+    g_list_foreach ( rows, (GFunc) gtk_tree_path_free, NULL );
+    g_list_free ( references );
+    g_list_free ( rows ); 
+}
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+G_MODULE_EXPORT void delbtn_cliked (GtkButton *delbtn, gpointer data)
+{
+    GtkBuilder *builder;
+    GError *error = NULL;
+    builder = gtk_builder_new();
+    if (!gtk_builder_add_from_file(builder, UI_FILE, &error))
+    {
+        g_warning("%s\n", error->message);
+        g_free(error);
+        printf("%s\n", error->message);
+        g_print("%s\n", error->message);
+    }
+
+
+    mainWindowObjects.delDialog = GTK_DIALOG(gtk_builder_get_object(builder, "delDialog"));
+
+    gtk_builder_connect_signals(builder, &mainWindowObjects);
+    g_object_unref(G_OBJECT(builder));
+    gtk_widget_show_all(GTK_WIDGET(mainWindowObjects.delDialog));
+
+}
+
+
+G_MODULE_EXPORT void on_nodelbtn_clicked(GtkButton *nodelbtn, gpointer data)
+{
+    gtk_widget_destroy(mainWindowObjects.delDialog);
+}
 
 G_MODULE_EXPORT void on_gousebtn_clicked (GtkButton *gousebtn, gpointer data)
 {
