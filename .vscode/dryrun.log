@@ -1,0 +1,7 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory '/mnt/c/src/GLab3'
+gcc -Wall -g `pkg-config --cflags gtk+-3.0 gmodule-2.0` -c lab03.c
+gcc -Wall -c lab03_sqlite.c
+gcc lab03.o lab03_sqlite.o -o lab03 -lsqlite3 `pkg-config --libs gtk+-3.0 gmodule-2.0`
+make: Leaving directory '/mnt/c/src/GLab3'
+ 
