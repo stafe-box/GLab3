@@ -36,7 +36,8 @@ struct MainWindowObjects
     GtkTreeViewColumn   *cln_control_name;
     GtkDialog           *addDialog;
     GtkBox              *databox;
-    GtkEntry            *lecturer_name_entry;
+    GtkComboBoxText     *lecturer_name_entry;
+    GtkEntry            *lecturer_name_entry_text;
     GtkEntry            *discipline_name_entry;
     GtkSpinButton       *lectures_spin;
     GtkSpinButton       *practices_spin;
@@ -377,10 +378,11 @@ G_MODULE_EXPORT void btnadd_clicked (GtkButton *btnadd, gpointer data)
         printf("%s\n", error->message);
         g_print("%s\n", error->message);
     }
-
+    
     mainWindowObjects.addDialog = GTK_DIALOG(gtk_builder_get_object(builder, "addDialog"));
     mainWindowObjects.databox = GTK_BOX(gtk_builder_get_object(builder, "databox"));
-    mainWindowObjects.lecturer_name_entry = GTK_ENTRY(gtk_builder_get_object(builder, "lecturer_name_entry"));
+    mainWindowObjects.lecturer_name_entry = GTK_COMBO_BOX_TEXT(gtk_builder_get_object(builder, "lecturer_name_entry"));
+    mainWindowObjects.lecturer_name_entry = GTK_ENTRY(gtk_builder_get_object(builder, "lecturer_name_entry_text"));
     mainWindowObjects.discipline_name_entry = GTK_ENTRY(gtk_builder_get_object(builder, "discipline_name_entry"));
     mainWindowObjects.lectures_spin = GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "lectures_spin"));
     mainWindowObjects.practices_spin = GTK_SPIN_BUTTON(gtk_builder_get_object(builder, "practices_spin"));

@@ -141,7 +141,7 @@ int callback_e(void *not_used, int argc, char **argv, char **col_names)
     
 }//можно заколхозить перекрёзсный вызов функций, так как получить данные нынешним способом не выйдет
 
-void sqlite_add(char *shopname, char *compname, float price)//последняя переменная ^^^
+void sqlite_add_lecturer(char *lecturer)//последняя переменная ^^^
 {
     sqlite3 *db;
     char *err_msg = 0;
@@ -151,16 +151,16 @@ void sqlite_add(char *shopname, char *compname, float price)//последняя
         fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
         sqlite3_close(db);
     }
-    char *sql_comp_temp_find_shop = "SELECT shop_id\
-                                     FROM shops\
-                                     WHERE name = '%s';";
+    char *sql_comp_temp_find_shop = "SELECT lecturer_id\
+                                     FROM lecturers\
+                                     WHERE lecturer_name = '%s';";
     char sql_comp[255];
     sprintf(sql_comp, sql_comp_temp_find_shop, shopname);
     rc = sqlite3_exec(db, sql_comp, callback_e, NULL, &err_msg);//пытаемя получить индекс магазина
     //если магазина нет возвращется 0, иначе индекс магазина
     if (TRY == 0)//если магазина нет
     {
-        char *sql_comp_temp_add_shop = "INSERT INTO shops (name)\
+        char *sql_comp_temp_add_shop = "INSERT INTO lecturers (lecturer_name)\
                                         VALUES ('%s');";
         char sql_comp2[255];
         sprintf(sql_comp2, sql_comp_temp_add_shop, shopname);
@@ -174,14 +174,33 @@ void sqlite_add(char *shopname, char *compname, float price)//последняя
         }
         sqlite_add(shopname, compname, price);
     }
-    else//если магазин есть, а он будет
+    sqlite3_close(db);
+}
+
+void sqlite_add_discipline(char *discipline, int lectures, int practices, int laboratory)//последняя переменная ^^^
+{
+    sqlite3 *db;
+    char *err_msg = 0;
+    int rc;
+    if (SQLITE_OK != (rc = sqlite3_open(DB_FILE, &db)))
     {
-        char *sql_comp_temp_add_comp = "INSERT INTO components (name, price, shop_id)\
-                                        VALUES ('%s', %d.%d, %d);";
-        char sql_comp3[255];
-        sprintf(sql_comp3, sql_comp_temp_add_comp, compname, (int)price, 
-                                        ((int)(price * 100)) % 100, TRY);
-        rc = sqlite3_exec(db, sql_comp3, NULL, NULL, &err_msg);
+        fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
+        sqlite3_close(db);
+    }
+    char *sql_comp_temp_find_shop = "SELECT discipline_id\
+                                     FROM disciplines\
+                                     WHERE discipline_name = '%s';";
+    char sql_comp[255];
+    sprintf(sql_comp, sql_comp_temp_find_shop, discipline);
+    rc = sqlite3_exec(db, sql_comp, callback_e, NULL, &err_msg);//пытаемя получить индекс магазина
+    //если магазина нет возвращется 0, иначе индекс магазина
+    if (TRY == 0)//если магазина нет
+    {
+        char *sql_comp_temp_add_shop = "INSERT INTO disciplines (discipline_name, lectures, practices, laboratory) \
+                                        VALUES (%s, %d, %d, %d);";
+        char sql_comp2[255];
+        sprintf(sql_comp2, sql_comp_temp_add_shop, discipline, lectures, practices, laboratory);
+        rc = sqlite3_exec(db, sql_comp2, NULL, NULL, &err_msg);
         if (rc != SQLITE_OK)
         {
             fprintf(stderr, "Failed to update data in components\n");
@@ -189,6 +208,7 @@ void sqlite_add(char *shopname, char *compname, float price)//последняя
             sqlite3_free(err_msg);
             sqlite3_close(db);
         }
+        sqlite_add(shopname, compname, price);
     }
     sqlite3_close(db);
 }
