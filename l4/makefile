@@ -4,8 +4,9 @@ EXEC_PAR_PT = par_pthreads
 SRC_PAR_PT = $(EXEC_PAR_PT).c
 EXEC_PAR_OMP = par_openmp
 SRC_PAR_OMP = $(EXEC_PAR_OMP).c
+CFLAGS_ALL = -lm -Wall
 CFLAGS_OMP = -fopenmp
-CFLAGS_PT = -pthread -lm -Wall
+CFLAGS_PT = -pthread
 
 all: $(EXEC_SEQ) $(EXEC_PAR_PT) $(EXEC_PAR_OMP)
 	./$(EXEC_SEQ)
@@ -13,13 +14,13 @@ all: $(EXEC_SEQ) $(EXEC_PAR_PT) $(EXEC_PAR_OMP)
 	./$(EXEC_PAR_OMP)
 
 $(EXEC_SEQ): $(SRC_SEQ)
-	gcc $< -o $@
+	gcc $< -o $@ $(CFLAGS_ALL)
 
 $(EXEC_PAR_PT): $(SRC_PAR_PT)
-	gcc $< -o $@ $(CFLAGS_PT)
+	gcc $< -o $@ $(CFLAGS_PT) $(CFLAGS_ALL)
 
-$(EXEC_PAR_OMP): $(SRC_PAR_OMP)
-	gcc $< -o $@ $(CFLAGS_OMP)
+$(EXEC_PAR_OMP): $(SRC_PAR_OMP) 
+	gcc $< -o $@ $(CFLAGS_OMP) $(CFLAGS_ALL)
 
 clean:
 	rm -f $(EXEC_SEQ)

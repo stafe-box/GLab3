@@ -1,38 +1,30 @@
 #include <stdio.h>
-#define N 8
-#define M 16
+#include <math.h>
 
 int main()
 {
-    int a[N][M];
-    int x[M], b[N];
-    unsigned int i, j;
-    printf("Matrix:\n");
-    for (i = 0; i < N; i++)
+    long double n;
+    long double sum = 0;
+    long double h = 0.02;
+    long double old_I = 0;
+    long double x = 0;
+
+    n=1e-15;
+    do
     {
-        for (j = 0; j < M; j++)
+        old_I = sum;
+        sum = 0;
+        h /= 2.0;
+        for (int i = 0; i < 2 / h; i++)
         {
-            a[i][j] = (i + j) * (i + 1) * (j + 1);
-            printf("%6d", a[i][j]);
+            x = i * h + h / 2.0;
+            if (i * h <= 1)
+                sum += cos(x + pow(x, 3));
+            else
+                sum += exp(-x * x) - x * x + 2 * x;
         }
-        printf("\n");
-    }
-    printf("Vector:\n");
-    for (i = 0; i < M; i++)
-    {
-        x[i] = (M - i) * (M - i);
-        printf("%6d", x[i]);
-    }
-
-    printf("\nSequential product:\n");
-    for (i = 0; i < N; i++)
-    {
-        b[i] = 0;
-        for (j = 0; j < M; j++)
-            b[i] += a[i][j] * x[j];
-        printf("%12d", b[i]);
-    }
-    printf("\n");
-
+        sum *= h;
+    } while (fabs(sum - old_I) / 3.0 >= n);
+    printf("%.20Lf\n", sum);
     return 0;
 }

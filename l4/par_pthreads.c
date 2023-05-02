@@ -1,72 +1,101 @@
-#include <pthread.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <math.h>
+#include <pthread.h>
 
-#define NTHREADS 10       // Количество потоков
-#define CIRCLE_RADIUS 10 // Радиус круга
-#define SIDE 1000         // Сторона квадрата
-
-// Структура для хранения координат центра очередного круга
-struct circle
+long double f(long double x)
 {
-    int x;
-    int y;
-};
-
-// Массив координат центров кругов
-struct circle circles[SIDE * SIDE];
-int current = 0;
-
-// Функция для вычисления расстояния между двумя точками
-double distance(int x1, int y1, int x2, int y2)
-{
-    return sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
-}
-
-// Функция для проверки, можно ли разместить круг в данной позиции
-int canPlace(int x, int y)
-{
-    for (int i = 0; i < current; i++)
-        if (distance(x, y, circles[i].x, circles[i].y) < 2 * CIRCLE_RADIUS)
-            return 0;
-    return 1;
-}
-
-// Функция для каждого потока
-void *thread_func(void *arg)
-{
-    int tid = *((int *)arg); // ID потока
-
-    for (int i = tid; i < SIDE * SIDE; i += NTHREADS)
+    if (x <= 1)
     {
-        int x = i % SIDE;
-        int y = i / SIDE;
-
-        if (canPlace(x, y))
-        {
-            circles[current].x = x;
-            circles[current].y = y;
-            current++;
-        }
+        return cos(x + pow(x, 3));
     }
+    return exp(-x * x) - x * x + 2 * x;
+}
+
+typedef struct
+{
+    long double a;
+    long double b;
+    long double eps;
+    long double sum;
+    int thread_id;
+} IntegralParams;
+
+pthread_mutex_t mutex;
+
+void *calculate_integral(void *arg)
+{
+    IntegralParams *params = (IntegralParams *)arg;
+    long double a = params->a;
+    long double b = params->b;
+    long double eps = params->eps;
+    int thread_id = params->thread_id;
+
+    int n = 1;
+    long double h = (b - a) / n;
+    long double prev_sum = 0.0;
+    params->sum = 0.0;
+
+    do
+    {
+        prev_sum = params->sum;
+        params->sum = 0.0;
+
+        for (int i = 0; i < n; i++)
+        {
+            long double x = a + (i + 0.5) * h;
+            long double partial_sum = f(x) * h;
+            params->sum += partial_sum;
+        }
+
+        n *= 2;
+        h /= 2;
+    } while (fabs(params->sum - prev_sum) > eps);
+
+    pthread_mutex_lock(&mutex);
+    IntegralParams *global_params = (IntegralParams *)arg;
+    global_params->sum += params->sum;
+    pthread_mutex_unlock(&mutex);
+
+    return NULL;
 }
 
 int main()
 {
-    pthread_t threads[NTHREADS];
-    int tids[NTHREADS];
+    long double a = 0.0;
+    long double b = 2.0;
+    long double eps = 1e-15;
+    int num_threads = 10;
 
-    for (int i = 0; i < NTHREADS; i++)
+    pthread_mutex_init(&mutex, NULL);
+
+    IntegralParams params[num_threads];
+    pthread_t threads[num_threads];
+
+    long double subinterval = (b - a) / num_threads;
+    for (int i = 0; i < num_threads; i++)
     {
-        tids[i] = i;
-        pthread_create(&threads[i], NULL, thread_func, &tids[i]);
+        params[i].a = a + i * subinterval;
+        params[i].b = a + (i + 1) * subinterval;
+        params[i].eps = eps;
+        params[i].sum = 0.0;
+        params[i].thread_id = i;
+        pthread_create(&threads[i], NULL, calculate_integral, (void *)&params[i]);
     }
 
-    for (int i = 0; i < NTHREADS; i++)
+    for (int i = 0; i < num_threads; i++)
     {
         pthread_join(threads[i], NULL);
     }
 
-    printf("Количество размещенных кругов: %d\n", current);
+    pthread_mutex_destroy(&mutex);
+
+    long double result = 0.0;
+    for (int i = 0; i < num_threads; i++)
+    {
+        result += params[i].sum;
+    }
+    result /= 2;
+    printf("result: %.20Lf\n", result);
+
+    return 0;
 }
