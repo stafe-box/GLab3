@@ -61,16 +61,6 @@ int callback(void *not_used, int argc, char **argv, char **col_names)
     return 0;
 }
 
-/*void price_cell_data_func(GtkTreeViewColumn *col, GtkCellRenderer *renderer, GtkTreeModel *model,
-                          GtkTreeIter *iter, gpointer user_data)
-{
-    gfloat price;
-    gchar buf[30];
-    gtk_tree_model_get(model, iter, PRICE, &price, -1);
-    g_snprintf(buf, sizeof(buf), "%.2f", price);
-    g_object_set(renderer, "text", buf, NULL);
-}*/
-
 int main(int argc, char **argv)
 {
     GtkBuilder *builder;
